@@ -190,7 +190,7 @@ async function verificarVencimientos() {
     clientesSnap.forEach((docu) => {
         const data = docu.data();
         if (data.fechaVencimiento === fechaObjetivo) {
-            const mensaje = encodeURIComponent(`Hola ${data.nombre}, te saludamos desde el gimnasio Fuerza Delta. Tu membresía vence el ${data.fechaVencimiento}. Te esperamos para renovar y seguir entrenando💪!. Éste es un mensaje automático. Muchas gracias.`);
+            const mensaje = encodeURIComponent(`Hola ${data.nombre}, te saludamos desde el gimnasio Fuerza Delta. Tu membresía vence el ${data.fechaVencimiento}. Te esperamos para renovar y seguir entrenando💪🏻!. Éste es un mensaje automático. Muchas gracias.`);
             const link = `https://wa.me/57${data.telefono}?text=${mensaje}`;
 
             const div = document.createElement("div");

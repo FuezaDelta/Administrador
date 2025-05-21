@@ -2,6 +2,7 @@
 <html lang="es">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gestión de Membresías - Gimnasio</title>
         <link rel="icon" href="img/logo-ico.ico" type="image/x-icon">
         <link rel="stylesheet" href="css/styles.css">
@@ -13,15 +14,14 @@
             <label>Cédula:</label>
             <input type="text" id="cedula" placeholder="Ingrese cédula"
                 required>
-            <!-- <input type="text" id="cedula" required> -->
             <button type="button" onclick="buscarCliente()">🔍 Buscar
                 cliente</button>
 
             <div class="search-by-apellido">
-                <label>Apellido:</label>
-                <input type="text" id="apellidoBusqueda">
+                <label>Buscar por nombre/apellido:</label>
+                <input type="text" id="apellidoBusqueda" placeholder="Ingrese nombre o apellido">
                 <button type="button" onclick="buscarClientePorApellido()">🔍
-                    Buscar por Apellido</button>
+                    Buscar cliente</button>
                 <div id="resultadosBusquedaApellido"></div>
             </div>
 
@@ -77,15 +77,6 @@
                         <input type="number" id="valorPagado" required>
                     </div>
                 </div>
-<!-- 
-                <div
-                    style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-                    <button id="btnGuardar" class="btn">💾 Registrar /
-                        Actualizar</button>
-                    <button id="btnEliminar" class="btn eliminar">🗑️
-                        Eliminar</button>
-                </div> -->
-
                 <button type="submit">💾 Registrar / Actualizar</button>
             </form>
 
