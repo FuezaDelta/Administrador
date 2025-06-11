@@ -5,7 +5,8 @@ import {
     setDoc,
     getDoc,
     getDocs,
-    collection
+    collection,
+    updateDoc // Importar updateDoc para actualizar solo ciertos campos
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -129,6 +130,7 @@ document.getElementById("registro").addEventListener("submit", async function (e
     const fechaVencimientoStr = fechaVencimiento.toISOString().split('T')[0];
 
     try {
+        // Al registrar o actualizar, resetear el estado de la notificación de vencimiento
         await setDoc(doc(db, "clientes", cedula), {
             nombre,
             cedula,
@@ -140,6 +142,8 @@ document.getElementById("registro").addEventListener("submit", async function (e
             valorPagado,
             fechaIngreso: fechaIngresoStr,
             fechaVencimiento: fechaVencimientoStr,
+            // Nuevo campo: al registrar/actualizar, no se ha enviado la notificación de "vence mañana" para este nuevo ciclo
+            notificacionVencimientoMañanaEnviada: false 
         });
 
         const hoy = new Date();
@@ -150,7 +154,7 @@ document.getElementById("registro").addEventListener("submit", async function (e
         document.getElementById("resultado").innerHTML =
             `✅ Cliente <strong>${nombre}</strong> actualizado correctamente.<br>Su membresía vence el <strong>${fechaVencimientoStr}</strong>.<br>Estado: ${estado}`;
 
-        verificarVencimientos();
+        verificarVencimientos(); // Vuelve a verificar y actualizar la lista de vencimientos
 
     } catch (error) {
         console.error("Error al registrar: ", error);
@@ -158,25 +162,18 @@ document.getElementById("registro").addEventListener("submit", async function (e
     }
 });
 
-// async function verificarVencimientos() {
-//     const container = document.getElementById("vencenManana");
-//     container.innerHTML = "";
-
-//     const mañana = new Date();
-//     mañana.setDate(mañana.getDate() + 1);
-//     const fechaObjetivo = mañana.toISOString().split('T')[0];
-
-//     const clientesSnap = await getDocs(collection(db, "clientes"));
-//     clientesSnap.forEach((docu) => {
-//         const data = docu.data();
-//         if (data.fechaVencimiento === fechaObjetivo) {
-//             const link = `https://wa.me/57${data.telefono}?text=Hola%20${encodeURIComponent(data.nombre)},%20te%20saludamos%20desde%20el%20Gimnasio%20Fuerza%20Delta.%20Tu%20membres%C3%ADa%20vence%20ma%C3%B1ana.%20%E2%9C%85%20Sigue%20mejorando%20tu%20salud%20y%20bienestar.%20%C2%A1Te%20esperamos%20para%20renovar%20y%20seguir%20entrenando!`;
-//             const div = document.createElement("div");
-//             div.innerHTML = `<strong>${data.nombre}</strong> (${data.telefono}) vence el ${data.fechaVencimiento}<br><a class='whatsapp-link' target='_blank' href='${link}'>📲 Enviar WhatsApp</a><br><br>`;
-//             container.appendChild(div);
-//         }
-//     });
-// }
+// Función para actualizar el estado de notificación en Firebase
+window.marcarNotificacionEnviada = async function (cedula) {
+    try {
+        const clienteRef = doc(db, "clientes", cedula);
+        await updateDoc(clienteRef, {
+            notificacionVencimientoMañanaEnviada: true
+        });
+        console.log(`Notificación de vencimiento marcada como enviada para: ${cedula}`);
+    } catch (error) {
+        console.error("Error al actualizar la notificación en Firestore: ", error);
+    }
+}
 
 async function verificarVencimientos() {
     const container = document.getElementById("vencenManana");
@@ -184,27 +181,45 @@ async function verificarVencimientos() {
 
     const mañana = new Date();
     mañana.setDate(mañana.getDate() + 1);
+    // Para asegurar que la comparación de fechas sea solo por el día, mes y año, 
+    // y no por la hora, minutos, segundos, que pueden causar discrepancias.
     const fechaObjetivo = mañana.toISOString().split("T")[0];
 
     const clientesSnap = await getDocs(collection(db, "clientes"));
     clientesSnap.forEach((docu) => {
         const data = docu.data();
+        // Compara la fecha de vencimiento del cliente con la fecha objetivo (mañana)
+        // Y verifica si la notificación para "vence mañana" ya fue enviada
         if (data.fechaVencimiento === fechaObjetivo) {
             const mensaje = encodeURIComponent(`Hola ${data.nombre}, te saludamos desde el gimnasio Fuerza Delta. Tu membresía vence el ${data.fechaVencimiento}. Te esperamos para renovar y seguir entrenando💪🏻!. Éste es un mensaje automático. Muchas gracias.`);
             const link = `https://wa.me/57${data.telefono}?text=${mensaje}`;
 
             const div = document.createElement("div");
+            let buttonHtml = '';
+
+            // Si la notificación ya fue enviada para esta fecha de vencimiento, muestra el check
+            // Asegúrate de que el campo exista y sea true
+            if (data.notificacionVencimientoMañanaEnviada === true) {
+                buttonHtml = '<span>✅ WhatsApp enviado</span>';
+            } else {
+                // Si no ha sido enviada, muestra el botón y configura el onclick
+                buttonHtml = `
+                    <a class='whatsapp-link' target='_blank' href='${link}' 
+                       onclick="this.outerHTML='<span>✅ WhatsApp enviado</span>'; marcarNotificacionEnviada('${data.cedula}'); return true;">📲 Enviar WhatsApp</a>
+                `;
+            }
+            
             div.innerHTML = `
-        <strong>${data.nombre}</strong> (${data.telefono}) vence el ${data.fechaVencimiento}<br>
-        <a class='whatsapp-link' target='_blank' href='${link}' onclick="this.outerHTML='<span>✅ WhatsApp enviado</span>'">📲 Enviar WhatsApp</a>
-        <br><br>
-      `;
+                <strong>${data.nombre}</strong> (${data.telefono}) vence el ${data.fechaVencimiento}<br>
+                ${buttonHtml}
+                <br><br>
+            `;
             container.appendChild(div);
         }
     });
 }
     
-
+// Llama a la función al cargar la página para mostrar los clientes que vencen
 verificarVencimientos();
 
 function llenarFormulario(data) {
